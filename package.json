@@ -1,0 +1,37 @@
+{
+  "name": "koa-swagger-restful",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "node sample/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kudorori/npm-koa-swagger-restful.git"
+  },
+  "keywords": [
+    "koa",
+    "swagger",
+    "restful",
+    "router",
+    "mongoose",
+    "mongodb"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kudorori/npm-koa-swagger-restful/issues"
+  },
+  "homepage": "https://github.com/kudorori/npm-koa-swagger-restful#readme",
+  "dependencies": {
+    "lodash": "^4.17.4",
+    "swagger-parser": "^3.4.1"
+  },
+  "devDependencies": {
+    "koa": "^2.1.0",
+    "koa-body": "^2.0.0",
+    "koa-router": "^7.0.1",
+    "koa-swagger-mongoose": "git+https://github.com/kudorori/koa-swagger-mongoose.git"
+  }
+}
