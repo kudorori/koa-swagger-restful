@@ -11,75 +11,140 @@ let parseAPI = (path) =>{
 	})
 }
 
-let buildRouter = (router, api) =>{
-  for(let key in api.definitions){
-    let model = api.definitions[key];
-    router.get(`/${key}`,restful.find(key, api[key]));
-    router.get(`/${key}/:${key}_id`,restful.findOne(key, api[key]));
-    router.use(`/${key}/:${key}_id`,buildObjectSubRouter(key, model, api));
-    /*
 
-    router.post(`/${key}`,restful.create(key));
-    
-    
-*/
+let documentRouter = class {
+  constructor(prefix,collection,properties,definitions,preEvent = [],postEvent = []){
+    this.prefix = prefix;
+    this.collectionName = collection;
+    this.properties = properties;
+    this.definitions = definitions;
+    this.preEvent = preEvent.length == 0 ? [] : preEvent;
+    this.postEvent = postEvent.length == 0 ? [] : postEvent;
   }
-}
-
-let buildObjectSubRouter = (name,model,api) => {
-  let subRouter = new Router();
-  
-  let property = model.properties;
-  for(let key in property){
-    if(property[key].$ref!=undefined){
-/*
-      let ref = items.$ref.split("/").pop();
-      subRouter.post(`/${key}`,restful.findOne(ref));
-*/
-    }else{
-      //單取取得(沒做任何populate)
-      subRouter.get(`/${key}`,restful.findField(key), restful.findOne(name));
-      switch(property[key].type){
+  build(){
+    let path = this.prefix;
+    let subRouter = new Router();
+    subRouter.get(`${path}`,...this.preEvent, ...this.postEvent, restful.exec());
+//     subRouter.patch(`${path}`,...this.patch());
+//     subRouter.put(`${path}`,...this.put());
+//     subRouter.delete(`${path}`,...this.del());
+    for(let key in this.properties){
+      let property = this.properties[key];
+      let $ref = property.$ref;
+      let type = property.type;
+      let subPath = `${path}/${key}`;
+      if($ref != undefined){
+        let refName = $ref.split("/").pop();
+        let refDoc = this.definitions[refName];
+        if(refDoc.properties!=undefined){
+          let dr = new documentRouter(
+                        subPath,
+                        this.collectionName,
+                        refDoc.properties,
+                        this.definitions,
+                        [...this.preEvent, restful.populate(key)],
+                        [restful.findField(key), ...this.postEvent]
+                      );
+          subRouter.use("",dr.build().routes());
+        }
+        continue;
+      }
+      
+      switch(type){
         case "object":{
-          //取得內嵌物件 findOne => findField => findField...
-          subRouter.use(`/${key}`,buildObjectSubRouter(key, property[key], api), restful.findOne(name));
           break;
         }
         case "array":{
-          //取得內嵌陣列 findOne => findField
-          subRouter.use(`/${key}`,buildArraySubRouter(key, property[key].items, api), restful.findOne(name));
+          let array_path = `${subPath}/:array_index`;
+          subRouter.get(subPath, ...this.preEvent, ...[restful.populate(key),restful.findField(key)], ...this.postEvent, restful.exec());
+          if(property.items.$ref != undefined){
+            let refName = property.items.$ref.split("/").pop();
+            let refDoc = this.definitions[refName];
+              
+              
+            subRouter.use("",dr.build().routes());
+            continue;
+          }
+          switch(property.items.type){
+            case "object":{
+              
+            }
+            case "array":{
+              
+            }
+            default:{
+              subRouter.get(array_path, ...this.preEvent, restful.getArrayItem(key), ...this.postEvent, restful.exec());
+            }
+          }
           break;
         }
-      } 
-    } 
+        default:{
+          subRouter.get(subPath, ...this.preEvent, restful.findField(key), ...this.postEvent, restful.exec());
+//           subRouter.patch(subPath, ...this.preEvent, ...this.updateField(key));
+//           subRouter.delete(subPath, ...this.preEvent, ...this.delField(key));
+          break;
+        }
+      }
+    }
+    return subRouter;
   }
-  console.log(subRouter);
-  return subRouter.routes();
 }
 
-let buildArraySubRouter = (name, items, api) => {
-  let subRouter = new Router();
-  if(items.$ref!=undefined){
-//     let ref = items.$ref.split("/").pop();
-//     subRouter.use("/:array_index",buildObjectSubRouter(api.definitions[ref]));
-//     return subRouter.routes();
+
+let collectionRouter = class {
+  constructor(collection,definition,definitions){
+    this.collectionName = collection;
+    this.definition = definition;
+    this.definitions = definitions;
   }
-  switch(items.type){
-    case "object":{
-      subRouter.use("/:array_index",buildObjectSubRouter(items));
-      break;
-    }
-    case "array":{
-      subRouter.use("/:array_index",buildArraySubRouter(items.items));
-      break;
-    }
-    default:{
-      subRouter.post("/",restful.pushArrayItem(name));
-      subRouter.get("/:array_index",restful.getArrayItem(name));
-      break;
-    }
+  build(){
+    let subRouter = new Router();
+    let path = `/${this.collectionName}`;
+    
+    subRouter.get(path,...this.find());
+    subRouter.post(path,...this.create());
+    
+    let dr = new documentRouter(
+      `${path}/:${this.collectionName}_id`,
+      this.collectionName,
+      this.definition.properties,
+      this.definitions,
+      [restful.findOne(this.collectionName)]);
+    subRouter.use("",dr.build().routes());
+//     console.log(subRouter);
+    return subRouter;
   }
-  return subRouter.routes();
+  find(){
+    return [restful.find(this.collectionName),restful.exec()];
+  }
+  
+  create(){
+    return [];
+  }
+  patch(){
+    return [];
+  }
+  put(){
+    return [];
+  }
+  del(){
+    return [];
+  }
+}
+
+let buildRouter = class {
+  constructor(router,api){
+    this.router = router;
+    this.api = api;
+  }
+  async build(){
+    for(let key in this.api.definitions){
+      let definition = this.api.definitions[key];
+      let cr = new collectionRouter(key,definition,this.api.definitions);
+      this.router.use("",cr.build().routes());
+    }
+    return this.router.routes();
+  }
 }
 
 module.exports = exports = function({
@@ -94,9 +159,11 @@ module.exports = exports = function({
   parseAPI(path).then(api => {
     console.log("koa-swagger-restful:: PARSE API SUCCESS");
     console.log(api.definitions);
-    return buildRouter(router, api);
-  }).then(() => {
-    
+    let b = new buildRouter(router,api);
+    return b.build();
+  }).then((routes) => {
+//     console.log(routes);
+//     router.use(routes);
   }).catch(err => {
     console.log(err);
   })

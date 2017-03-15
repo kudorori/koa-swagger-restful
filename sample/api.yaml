@@ -63,6 +63,8 @@ definitions:
         type: array
         items:
           type: string
+      img:
+        $ref: "#/definitions/imgs"
   gallery:
     type: object
     properties:

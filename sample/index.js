@@ -9,6 +9,20 @@ const host = "mongodb://root:root@ds145379.mlab.com:45379/restful_test"
 app.use(body());
 
 /*
+app.use(async(ctx,next) => {
+  await next();
+  let user = await ctx.models.user.findOne({_id:"58c26657f83967df067a0535"});
+  let img = new (ctx.models.imgs)({
+    img_src:"123123"
+  });
+  await img.save();
+  user.img = img;
+  await user.save();
+  
+})
+*/
+
+/*
 app.use(async (ctx,next) => {
   await next();
   let user = new (ctx.models.user)({
@@ -38,16 +52,24 @@ app.use(async (ctx,next) => {
 app.use(async(ctx, next)=>{
   await next();
   let user = ctx.models.user;
-  console.log(user.schema);
+  ctx.body = await user.find().populate({
+    path: "gallery",
+    populate: {
+      path: "imgs"
+    }
+  });
 })
 */
 
 // response
 app.use(async (ctx,next) => {
+  ctx.collections = [];
+  ctx.populates = [];
+  ctx.findFields = [];
   console.log("事前處理定義：認證、判斷等等");
   await next();
   console.log("事後處理：資料轉換、輸出格式調整");
-  console.log(ctx.body);
+//   console.log(ctx.body);
   ctx.body = {
     result: ctx.body
   }
