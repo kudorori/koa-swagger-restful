@@ -7,6 +7,7 @@ swagger: '2.0'
 info:
   version: "0.0.0"
   title: <enter your title>
+basePath: /api/v1
 
 # Describe your paths here
 paths:
@@ -63,11 +64,18 @@ definitions:
         type: array
         items:
           type: string
-      img:
-        $ref: "#/definitions/imgs"
+      tests:
+        type: array
+        items:
+          type: object
+          properties:
+            name: 
+              type: string
   gallery:
     type: object
     properties:
+      user:
+        $ref: "#/definitions/user"
       img_src:
         type: string
       img:
