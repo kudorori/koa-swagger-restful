@@ -26,8 +26,16 @@ module.exports = class extends base{
       console.log("addDocument wait");
       await next();
       const body = ctx.request.body;
-      let model = new (ctx.models[modelName])(body);
-      ctx.body = await model.save();
+//       console.log(typeof(body));
+//       console.log(!Array.isArray(body));
+      if(!Array.isArray(body)){
+        let model = new (ctx.models[modelName])(body);
+        ctx.body = await model.save();
+      }else{
+        let model = ctx.models[modelName];
+        ctx.body = await model.insertMany(body);
+      }
+      
       console.log("addDocument end");
     }
   }
@@ -38,7 +46,7 @@ module.exports = class extends base{
       await next();
       let body = ctx.request.body;
       
-      if(definition.items.$ref != undefined){
+      if(definition.items.$ref != undefined && typeof(body) == "object"){
         let model = new (ctx.models[definition.items.$ref.split("/").pop()])(body);
         await model.save();
         body = model._id;
