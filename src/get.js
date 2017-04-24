@@ -115,7 +115,8 @@ module.exports = class extends base{
         _query = false
       } = ctx.query;
       let model = ctx.models[modelName];
-      model = model.find().populate(_populate).select(_select).limit(parseInt(_limit)).skip(parseInt(_skip)).sort(_sort);
+      let query = {};
+      
       for(let whereName in ctx.query){
         if(!privateRegex.test(whereName)){
           let value = ctx.query[whereName];
@@ -124,25 +125,35 @@ module.exports = class extends base{
           });
           switch(type.type){
             case "IN":
-              model = model.where(whereName).in(value.substr(1, value.length-2).split(","))
+              query[whereName] = {
+                $in: value.substr(1, value.length-2).split(",")
+              };
               break;
             case "LTE":
-              model = model.where(whereName).lte(value.substr(2));
+              query[whereName] = {
+                $lte: value.substr(2)
+              };
               break;
             case "LT":
-              model = model.where(whereName).lt(value.substr(1));
+              query[whereName] = {
+                $lt: value.substr(1)
+              };
               break;
             case "GT":
-              model = model.where(whereName).gt(value.substr(1));
+              query[whereName] = {
+                $gt: value.substr(1)
+              };
               break;
             case "GTE":
-              model = model.where(whereName).gte(value.substr(2));
+              query[whereName] = {
+                $gte: value.substr(2)
+              };
               break;
             case "REGEXP":
-              model = model.where(whereName).equals(new RegExp(value.substr(1, (value.length-2))));
+              query[whereName] = new RegExp(value.substr(1, (value.length-2)));
               break;
             default: 
-              model = model.where(whereName).equals(value);
+              query[whereName] = value;
               break;
           }
         }
@@ -151,7 +162,10 @@ module.exports = class extends base{
       if(_count){
         result = await model.count();
       }else{
-        result = await model.exec();
+        result = {
+          items: await model.find(query).populate(_populate).select(_select).limit(parseInt(_limit)).skip(parseInt(_skip)).sort(_sort),
+          count: await model.find(query).count() 
+        };
       }
       ctx.body = result;
     }
