@@ -159,11 +159,13 @@ module.exports = class extends base{
           }
         }
       }
+
       let result = [];
       if(_count){
         result = await model.count();
       }else if(_findOne){
-        result = await model.findOne(query).populate(_populate).select(_select).limit(parseInt(_limit)).skip(parseInt(_skip)).sort(_sort)
+        let data = await model.findOne(query).populate(_populate).select(_select).sort(_sort).exec();
+        result = data == null ? {} : data;
       }else{
         result = {
           items: await model.find(query).populate(_populate).select(_select).limit(parseInt(_limit)).skip(parseInt(_skip)).sort(_sort),
