@@ -35,10 +35,10 @@ module.exports = class extends base{
     this.api = api;
     this.definitions = api.definitions;
   }
-  
-  
+
+
   /*
-    對每個 collection 新增 get 方法 
+    對每個 collection 新增 get 方法
   */
   __collection(modelName, definition){
     /*
@@ -55,21 +55,21 @@ module.exports = class extends base{
       }
     }
   }
-  
+
   getDocument(modelName){
     return async (ctx, next) => {
       console.log("get document wait");
       await next();
       let query = {_id: ctx.params._id};
-      let { 
-        _select = "",  
+      let {
+        _select = "",
         _populate=""
       } = ctx.query;
       ctx.body = await ctx.models[modelName].findOne(query).select(_select).populate(_populate).exec();
       console.log("get document end");
     }
   }
-  
+
   getDocumentOfField(fieldName){
     return async (ctx, next) => {
       console.log("get field wait");
@@ -79,7 +79,7 @@ module.exports = class extends base{
       console.log("get field end");
     }
   }
-  
+
   getDocumentOfFieldArray(){
     return async (ctx, next) => {
       console.log("get array wait");
@@ -88,8 +88,8 @@ module.exports = class extends base{
       console.log("get array end");
     }
   }
-  
-  
+
+
   /*
     處理query collection
     * 條件查詢
@@ -97,26 +97,27 @@ module.exports = class extends base{
     * regexp
     * ><=
     * in
-    
+
     TODO:
       or (ex: $or = {object?} | ([or][whereName] = ???)
-      
+
   */
   getCollection(modelName){
     return async (ctx, next) => {
       await next();
       let {
-        _count = false, 
-        _skip = 0, 
-        _limit = 100, 
-        _select = "", 
-        _sort = "", 
-        _populate="",
-        _query = false
+        _count = false,
+        _skip = 0,
+        _limit = 100,
+        _select = "",
+        _sort = "",
+        _populate = "",
+        _query = false,
+        _findOne = false
       } = ctx.query;
       let model = ctx.models[modelName];
       let query = {};
-      
+
       for(let whereName in ctx.query){
         if(!privateRegex.test(whereName)){
           let value = ctx.query[whereName];
@@ -152,7 +153,7 @@ module.exports = class extends base{
             case "REGEXP":
               query[whereName] = new RegExp(value.substr(1, (value.length-2)));
               break;
-            default: 
+            default:
               query[whereName] = value;
               break;
           }
@@ -161,18 +162,20 @@ module.exports = class extends base{
       let result = [];
       if(_count){
         result = await model.count();
+      }else if(_findOne){
+        result = await model.findOne(query).populate(_populate).select(_select).limit(parseInt(_limit)).skip(parseInt(_skip)).sort(_sort)
       }else{
         result = {
           items: await model.find(query).populate(_populate).select(_select).limit(parseInt(_limit)).skip(parseInt(_skip)).sort(_sort),
-          count: await model.find(query).count() 
+          count: await model.find(query).count()
         };
       }
       ctx.body = result;
     }
   }
-  
-  
-  
+
+
+
   build(){
     for(let key in this.definitions){
       this.__collection(key, this.definitions[key]);
