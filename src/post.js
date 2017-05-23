@@ -25,7 +25,7 @@ module.exports = class extends base{
     return async(ctx, next) => {
       console.log("addDocument wait");
       await next();
-      const body = ctx.is("formData") ? ctx.request.body.fields : ctx.request.body;
+      const body = ctx.is("multipart") ? ctx.request.body.fields : ctx.request.body;
       if(!Array.isArray(body)){
         let model = new (ctx.models[modelName])(body);
         ctx.body = await model.save();
@@ -42,7 +42,7 @@ module.exports = class extends base{
     return async(ctx, next) => {
       console.log("push array wait");
       await next();
-      let body =  ctx.is("formData") ? ctx.request.body.fields : ctx.request.body;
+      let body =  ctx.is("multipart") ? ctx.request.body.fields : ctx.request.body;
 
       if(definition.items.$ref != undefined && typeof(body) == "object"){
         let model = new (ctx.models[definition.items.$ref.split("/").pop()])(body);

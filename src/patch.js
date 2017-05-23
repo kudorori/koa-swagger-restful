@@ -15,7 +15,7 @@ module.exports = class extends base{
       ctx.body = await model.update({
         _id: ctx.params._id
       },{
-        $set: ctx.is("formData") ? ctx.request.body.fields : ctx.request.body
+        $set: ctx.is("multipart") ? ctx.request.body.fields : ctx.request.body
       });
     }
   }
