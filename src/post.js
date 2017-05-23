@@ -1,7 +1,7 @@
 let base = require("./base");
 /*
-  post: 
-  * 新增 document 
+  post:
+  * 新增 document
   * document push array
 */
 module.exports = class extends base{
@@ -10,7 +10,7 @@ module.exports = class extends base{
     this.api = api;
     this.definitions = api.definitions;
   }
-  
+
   getDocument(modelName){
     return async(ctx, next) => {
       console.log("get document wait");
@@ -20,14 +20,12 @@ module.exports = class extends base{
       console.log("get document end");
     }
   }
-  
+
   addDocument(modelName){
     return async(ctx, next) => {
       console.log("addDocument wait");
       await next();
-      const body = ctx.request.body;
-//       console.log(typeof(body));
-//       console.log(!Array.isArray(body));
+      const body = ctx.is("formData") ? ctx.request.body.fields : ctx.request.body;
       if(!Array.isArray(body)){
         let model = new (ctx.models[modelName])(body);
         ctx.body = await model.save();
@@ -35,29 +33,29 @@ module.exports = class extends base{
         let model = ctx.models[modelName];
         ctx.body = await model.insertMany(body);
       }
-      
+
       console.log("addDocument end");
     }
   }
-  
+
   pushDocumentOfArray(fieldName, definition){
     return async(ctx, next) => {
       console.log("push array wait");
       await next();
-      let body = ctx.request.body;
-      
+      let body =  ctx.is("formData") ? ctx.request.body.fields : ctx.request.body;
+
       if(definition.items.$ref != undefined && typeof(body) == "object"){
         let model = new (ctx.models[definition.items.$ref.split("/").pop()])(body);
         await model.save();
         body = model._id;
       }
-      
+
       ctx.body[fieldName].push(body);
       ctx.body = await ctx.body.save();
       console.log("push array end");
     }
   }
-  
+
   __collection(modelName, definition){
     this.router.post(`/${modelName}`, this.addDocument(modelName));
     for(const fieldName in definition.properties){
@@ -67,7 +65,7 @@ module.exports = class extends base{
       }
     }
   }
-  
+
   build(){
     for(let key in this.definitions){
       this.__collection(key,this.definitions[key]);

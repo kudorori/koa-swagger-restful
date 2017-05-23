@@ -7,7 +7,7 @@ module.exports = class extends base{
     this.api = api;
     this.definitions = api.definitions;
   }
-  
+
   updateDocument(modelName){
     return async (ctx, next) => {
       await next();
@@ -15,25 +15,25 @@ module.exports = class extends base{
       ctx.body = await model.update({
         _id: ctx.params._id
       },{
-        $set: ctx.request.body
+        $set: ctx.is("formData") ? ctx.request.body.fields : ctx.request.body;
       });
     }
   }
-  
+
   updateCollection(modelName){
     return async (ctx, next) => {
       await next();
       const {
         _force = false
       } = ctx.query;
-      
+
       let query = {};
       console.log(ctx.query);
       for(let whereName in ctx.query){
         if(validate.params.private.test(whereName)){
           continue;
         }
-        
+
         let value = ctx.query[whereName];
         let type = validate.where.find((item) => {
           return item.regex.test(value);
@@ -67,7 +67,7 @@ module.exports = class extends base{
           case "REGEXP":
             query[whereName] = new RegExp(value.substr(1, (value.length-2)));
             break;
-          default: 
+          default:
             query[whereName] = value;
             break;
         }
@@ -86,12 +86,12 @@ module.exports = class extends base{
       }
     }
   }
-  
+
   __collection(modelName, definition){
     this.router.patch(`/${modelName}`, this.updateCollection(modelName));
     this.router.patch(`/${modelName}/:_id`, this.updateDocument(modelName));
   }
-  
+
   build(){
     for(let key in this.definitions){
       this.__collection(key,this.definitions[key]);
