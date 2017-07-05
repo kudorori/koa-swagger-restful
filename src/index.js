@@ -3,6 +3,7 @@ let Router = require("koa-router");
 let restful = require("./restful.js");
 let getMethod = require("./get.js");
 let postMethod = require("./post.js");
+let putMethod = require("./put.js");
 let patchMethod = require("./patch.js");
 let deleteMethod = require("./delete.js");
 
@@ -23,7 +24,7 @@ module.exports = exports = function({
     return;
   }
   let router = new Router();
-  
+
   parseAPI(path).then(api => {
     const basePath = `${api.basePath}/models`;
     console.log("koa-swagger-restful:: PARSE API SUCCESS");
@@ -32,10 +33,10 @@ module.exports = exports = function({
     router.use(basePath, new patchMethod(api).build());
     router.use(basePath, new deleteMethod(api).build());
   }).then(() => {
-    
+
   }).catch(err => {
     console.log(err);
   })
-  
+
   return router.routes();
 }
