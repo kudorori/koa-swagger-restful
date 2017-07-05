@@ -32,6 +32,7 @@ module.exports = exports = function({
     router.use(basePath, new postMethod(api).build());
     router.use(basePath, new patchMethod(api).build());
     router.use(basePath, new deleteMethod(api).build());
+    router.use(basePath, new putMethod(api).build());
   }).then(() => {
 
   }).catch(err => {
